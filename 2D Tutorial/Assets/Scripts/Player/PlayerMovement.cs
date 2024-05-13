@@ -36,6 +36,7 @@ public class PlayerMovement : MonoBehaviour
     public bool isStickingToWall = false;
     public float jumpSpeed = 10;
 
+    public static bool iswin = false;
     [SerializeField] AudioSource jump_sound;
     [SerializeField] AudioSource walk_sound;
     private int score = 0;
@@ -188,6 +189,10 @@ public class PlayerMovement : MonoBehaviour
             HealthManagerPlayerScript healthManager = helathManager.GetComponent<HealthManagerPlayerScript>();
             healthManager.Heal(100);
             Destroy(other.gameObject);
+        } else if (other.gameObject.tag == "Finish"){
+            GameObject victory = GameObject.Find("Victory");
+            victory.GetComponent<Text>().text = "Victory!!";
+            Debug.Log("You Win!");
         }
     }
 
