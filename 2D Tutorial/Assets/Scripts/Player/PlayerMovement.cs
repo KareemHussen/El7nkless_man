@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -28,9 +31,15 @@ public class PlayerMovement : MonoBehaviour
     [Header("fall physics")]
     public float fallMultiplier;
     public float lowJumpMultiplier;
+ 
+    [Header("wall jump")]
+    public bool isStickingToWall = false;
+    public float jumpSpeed = 10;
 
+    [SerializeField] AudioSource jump_sound;
+    [SerializeField] AudioSource walk_sound;
     private int score = 0;
-
+    // scriptText scriptText;
 
     private void Awake()
     {
@@ -46,29 +55,51 @@ public class PlayerMovement : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         boxCollider = GetComponent<BoxCollider2D>();
-    }
+    } 
+
 
     private void FixedUpdate(){
         horizontalInput = Input.GetAxis("Horizontal");
 
         //Flip player when moving left-right
-        if (horizontalInput > 0.01f)
+        if (horizontalInput > 0.01f){
+            walk_sound.Play();
             transform.localScale = Vector3.one;
-        else if (horizontalInput < -0.01f)
+        }
+        else if (horizontalInput < -0.01f){
+            walk_sound.Play();
             transform.localScale = new Vector3(-1, 1, 1);
+        }
 
         body.velocity = new Vector2(horizontalInput * speed, body.velocity.y);
         
         anim.SetBool("run", horizontalInput != 0);
-        // anim.SetTrigger("die");
+        
+        wall_jump(horizontalInput);
     }
 
     private void Update()
     {
         if (Input.GetKey(KeyCode.Space))
-            Jump();
+          { jump_sound.Play();
+             Jump();
+          } 
     }
-
+    public void wall_jump(float direction){
+        if (isStickingToWall)
+        { 
+            direction = 0;
+            transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
+        }
+        if (isStickingToWall && Input.GetKeyDown(KeyCode.Space))
+        {
+            isStickingToWall = false;  
+            float jumpForceX = jumpSpeed * 1.2f;
+            float jumpForceY = jumpSpeed;
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(-direction * jumpForceX, jumpForceY)); 
+            jump_sound.Play();
+        }
+    }
     private void Jump()
     {
 
@@ -132,12 +163,25 @@ public class PlayerMovement : MonoBehaviour
         {
             jumpTimeCounter = jumpTime;
         }
+        else if (collision.gameObject.tag == "Wall")
+        {
+            jumpTimeCounter = jumpTime;
+        }
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+       if (collision.gameObject.tag == "Wall")
+        {
+            isStickingToWall = false;
+        }
     }
 
     void OnTriggerEnter2D (Collider2D other)
     {
         if (other.gameObject.tag == "Gem"){
             score += 10;
+            ScoreText.score_value = score;
             Destroy(other.gameObject);
         } else if (other.gameObject.tag == "Cherry"){
             GameObject helathManager = GameObject.Find("HealthManagerPlayer");     
@@ -145,7 +189,6 @@ public class PlayerMovement : MonoBehaviour
             healthManager.Heal(100);
             Destroy(other.gameObject);
         }
-    
     }
 
     // private bool isGrounded()
